@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31825.309
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConwayLife", "ConwayLife\ConwayLife.vcxproj", "{B0E57E89-24B5-43D4-9DCA-20D3102B6EE0}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "aux_", "aux_\aux_.vcxproj", "{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{B0E57E89-24B5-43D4-9DCA-20D3102B6EE0}.Release|x64.Build.0 = Release|x64
 		{B0E57E89-24B5-43D4-9DCA-20D3102B6EE0}.Release|x86.ActiveCfg = Release|Win32
 		{B0E57E89-24B5-43D4-9DCA-20D3102B6EE0}.Release|x86.Build.0 = Release|Win32
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Debug|x64.ActiveCfg = Debug|x64
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Debug|x64.Build.0 = Debug|x64
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Debug|x86.ActiveCfg = Debug|Win32
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Debug|x86.Build.0 = Debug|Win32
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Release|x64.ActiveCfg = Release|x64
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Release|x64.Build.0 = Release|x64
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Release|x86.ActiveCfg = Release|Win32
+		{29C8DF3F-BE03-4176-B4B3-B87C374E31AB}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
