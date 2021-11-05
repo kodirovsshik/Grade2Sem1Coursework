@@ -21,9 +21,21 @@
     <ClCompile Include="dependencies.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="graphics.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="engine.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="auxillary.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

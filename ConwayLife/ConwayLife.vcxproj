@@ -162,9 +162,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dependencies.cpp" />
+    <ClCompile Include="engine.cpp" />
+    <ClCompile Include="graphics.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="auxillary.hpp" />
+    <ClInclude Include="engine.hpp" />
     <ClInclude Include="graphics.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
