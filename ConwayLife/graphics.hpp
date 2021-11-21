@@ -20,20 +20,22 @@ class view_t
 	float ratio = 0;
 
 
-	ksn::vec2f map_w2s(ksn::vec2f world_coordinates)
+public:
+
+	ksn::vec2f map_w2s(ksn::vec2f world_coordinates) const noexcept
 	{
 		return (world_coordinates - this->m_origin) * ratio;
 	}
-	ksn::vec2f map_s2w(ksn::vec2f world_coordinates)
+	ksn::vec2f map_s2w(ksn::vec2f world_coordinates) const noexcept
 	{
 		return world_coordinates / ratio + this->m_origin;
 	}
 
-	void zoom_in_s(ksn::vec2f screen_coordinates, float factor)
+	void zoom_in_s(ksn::vec2f screen_coordinates, float factor) noexcept
 	{
 		this->zoom_in_w(this->map_s2w(screen_coordinates), factor);
 	}
-	void zoom_in_w(ksn::vec2f world_coordinates, float factor)
+	void zoom_in_w(ksn::vec2f world_coordinates, float factor) noexcept
 	{
 		this->m_origin += world_coordinates * (1 - factor);
 		this->ratio /= factor;
@@ -41,6 +43,8 @@ class view_t
 };
 
 
+
+class swapchain_t;
 
 class framebuffer_t
 {
@@ -59,7 +63,7 @@ public:
 
 	void release();
 
-	void draw_rect(ksn::vec2f downleft, ksn::vec2f topright);
+	void draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::color_bgr_t color, const view_t* view = nullptr);
 
 	swapchain_t* get_parent() const noexcept;
 	const ksn::color_bgr_t* get_data() const noexcept;
@@ -72,6 +76,7 @@ class swapchain_t
 {
 	std::vector<framebuffer_t> m_frames;
 	ksn::vec2i m_size;
+	ksn::vec2i m_screen_size;
 	size_t frame_index = -1;
 
 
@@ -81,7 +86,8 @@ public:
 
 	framebuffer_t* acquire_frame() noexcept;
 
-	ksn::vec2i get_size() const noexcept;
+	ksn::vec2i get_screen_size() const noexcept;
+	ksn::vec2i get_actual_size() const noexcept;
 };
 
 
