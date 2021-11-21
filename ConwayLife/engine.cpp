@@ -45,6 +45,17 @@ void engine_t::on_exit()
 {
 }
 
+bool engine_t::on_close()
+{
+	return true;
+}
+void engine_t::on_focus_gain()
+{
+}
+void engine_t::on_focus_loss()
+{
+}
+
 
 void engine_t::set_bufferization(uint8_t frames_count)
 {
@@ -111,8 +122,6 @@ engine_t::engine_t()
 	memset(this->engine_key_down, 0, sizeof(this->engine_key_down));
 	memset(this->engine_key_pressed, 0, sizeof(this->engine_key_pressed));
 	memset(this->engine_key_released, 0, sizeof(this->engine_key_released));
-
-	this->engine_autoclear_color = ksn::color_bgr_t(0, 0, 0);
 
 	this->engine_autoclear = true;
 	this->engine_prevent_tearing = true;
@@ -186,7 +195,7 @@ int engine_t::main_loop()
 		for (size_t i = 0; i < this->m_bufferization; ++i)
 		{
 			auto* frame = this->m_swapchain.acquire_frame();
-			frame->fill(this->engine_autoclear_color);
+			frame->clear();
 			frame->release();
 		}
 	}
@@ -197,16 +206,19 @@ int engine_t::main_loop()
 
 
 	this->m_window.show();
-
+	
 	while (true)
 	{
 		this->basic_draw();
 		if (!this->basic_update())
-			return 0;
+			break;
 	}
+	
+	this->m_window.close();
 
 
 	this->on_exit();
+	return 0;
 }
 
 
@@ -217,19 +229,20 @@ void engine_t::static_display(engine_t* engine, framebuffer_t* frame)
 
 	if (use_lock)
 		engine->m_draw_semaphore.acquire();
-
-	engine->m_window.draw_pixels_bgr_front(frame->get_data());
+	
+	auto buffer_size = engine->m_swapchain.get_actual_size();
+	engine->m_window.draw_pixels_bgr_front(frame->get_data(), 0, 0, buffer_size[0], buffer_size[1]);
 
 	if (use_lock)
 		engine->m_draw_semaphore.release();
 
 
 	if (engine->engine_autoclear)
-		frame->fill(engine->engine_autoclear_color);
+		frame->clear();
 
 
-	frame->release();
 	engine->m_window.tick();
+	frame->release();
 }
 
 
@@ -250,6 +263,48 @@ void engine_t::basic_draw()
 }
 bool engine_t::basic_update()
 {
+	memset(this->engine_key_pressed, 0, sizeof(this->engine_key_pressed));
+	memset(this->engine_key_released, 0, sizeof(this->engine_key_released));
+
+	ksn::event_t ev;
+	while (this->m_window.poll_event(ev))
+	{
+		switch (ev.type)
+		{
+		case ksn::event_type_t::close:
+			if (this->on_close())
+				return false;
+			break;
+
+		case ksn::event_type_t::keyboard_press:
+			this->engine_key_down[(int)ev.keyboard_button_data.button] = true;
+			this->engine_key_pressed[(int)ev.keyboard_button_data.button] = true;
+			break;
+
+		case ksn::event_type_t::keyboard_release:
+			this->engine_key_down[(int)ev.keyboard_button_data.button] = false;
+			this->engine_key_released[(int)ev.keyboard_button_data.button] = true;
+			break;
+
+		case ksn::event_type_t::focus_gained:
+			this->on_focus_gain();
+			break;
+
+		case ksn::event_type_t::focus_lost:
+			this->on_focus_loss();
+			if (this->engine_reset_keys_on_focus_loss)
+			{
+				for (size_t i = 0; i < std::size(this->engine_key_down); ++i)
+					if (this->engine_key_down[i])
+					{
+						this->engine_key_down[i] = false;
+						this->engine_key_released[i] = true;
+					}
+			}
+			break;
+		}
+	}
+
 	float dt = this->m_update_clock.restart().as_float_sec();
 	if (dt == 0)
 		dt = 1.f / this->m_window.get_framerate();

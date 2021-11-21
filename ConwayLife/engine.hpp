@@ -67,12 +67,11 @@ protected:
 			bool engine_use_async_displaying : 1;
 			bool engine_prevent_tearing : 1;
 			bool engine_autoclear : 1;
+			bool engine_reset_keys_on_focus_loss : 1;
 		};
 
 		uint16_t engine_flags;
 	};
-
-	ksn::color_bgr_t engine_autoclear_color;
 
 
 
@@ -81,6 +80,10 @@ protected:
 
 	virtual void on_init();
 	virtual void on_exit();
+	
+	virtual bool on_close();
+	virtual void on_focus_gain();
+	virtual void on_focus_loss();
 	
 
 	void set_bufferization(uint8_t frames_count);
@@ -98,7 +101,6 @@ protected:
 public:
 
 	int run(bool resizable_window = false);
-	//int run(ksn::vec<2, uint16_t> initial_size = { 800, 600 }, const wchar_t* initial_title = L"", bool resizable = true);
 
 	virtual ~engine_t() = 0;
 };
