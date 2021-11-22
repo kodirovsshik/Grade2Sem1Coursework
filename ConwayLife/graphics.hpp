@@ -17,29 +17,29 @@
 class view_t
 {
 	ksn::vec2f m_origin;
-	float ratio = 0;
+	float m_ratio = 0;
 
 
 public:
 
-	ksn::vec2f map_w2s(ksn::vec2f world_coordinates) const noexcept
-	{
-		return (world_coordinates - this->m_origin) * ratio;
-	}
-	ksn::vec2f map_s2w(ksn::vec2f world_coordinates) const noexcept
-	{
-		return world_coordinates / ratio + this->m_origin;
-	}
+	struct center_t {};
 
-	void zoom_in_s(ksn::vec2f screen_coordinates, float factor) noexcept
-	{
-		this->zoom_in_w(this->map_s2w(screen_coordinates), factor);
-	}
-	void zoom_in_w(ksn::vec2f world_coordinates, float factor) noexcept
-	{
-		this->m_origin += world_coordinates * (1 - factor);
-		this->ratio /= factor;
-	}
+	view_t() noexcept;
+	view_t(ksn::vec2f origin, float ratio) noexcept;
+	view_t(ksn::vec2f center, float ratio, ksn::vec2i screen_size) noexcept;
+	view_t(ksn::vec2f origin, float view_dim, int screen_dim) noexcept;
+	view_t(ksn::vec2f origin, ksn::vec2f view_min_size, ksn::vec2i screen_size) noexcept;
+	view_t(center_t, ksn::vec2f center, ksn::vec2f view_min_size, ksn::vec2i screen_size) noexcept;
+
+
+	ksn::vec2f map_w2s(ksn::vec2f world_coordinates) const noexcept;
+	ksn::vec2f map_s2w(ksn::vec2f screen_coordinates) const noexcept;
+
+	void zoom_in_s(ksn::vec2f screen_coordinates, float factor) noexcept;
+	void zoom_in_w(ksn::vec2f world_coordinates, float factor) noexcept;
+
+	void shiht_by_w(ksn::vec2f world_dpos) noexcept;
+	void shiht_by_s(ksn::vec2f screen_dpos) noexcept;
 };
 
 

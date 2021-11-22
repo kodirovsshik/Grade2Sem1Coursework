@@ -79,7 +79,7 @@ void swapchain_t::create(uint16_t width, uint16_t height, size_t frames)
 	width = ksn::align_up<uint16_t>(width, alignment);
 
 	this->m_size = { width, height };
-	size_t total_area = width * height;
+	size_t total_area = (size_t)width * height;
 
 	for (auto& frame : this->m_frames)
 	{
@@ -115,4 +115,74 @@ ksn::vec2i swapchain_t::get_screen_size() const noexcept
 ksn::vec2i swapchain_t::get_actual_size() const noexcept
 {
 	return this->m_size;
+}
+
+
+view_t::view_t() noexcept
+	: m_origin{}, m_ratio(0)
+{
+}
+view_t::view_t(ksn::vec2f origin, float ratio) noexcept
+	: m_origin(origin), m_ratio(ratio)
+{
+}
+
+view_t::view_t(ksn::vec2f center, float ratio, ksn::vec2i screen_size) noexcept
+{
+	this->view_t::view_t(center - (ksn::vec2f)screen_size * 0.5f / ratio, ratio);
+}
+
+view_t::view_t(ksn::vec2f origin, float view_dim, int screen_dim) noexcept
+	: m_origin(origin), m_ratio(screen_dim / view_dim)
+{
+}
+
+view_t::view_t(ksn::vec2f origin, ksn::vec2f view_min_size, ksn::vec2i screen_size) noexcept
+	: m_origin(origin)
+{
+	float ratio_x = screen_size[0] / view_min_size[0];
+	float ratio_y = screen_size[1] / view_min_size[1];
+
+	this->m_ratio = std::max(ratio_x, ratio_y);
+}
+
+view_t::view_t(center_t, ksn::vec2f center, ksn::vec2f view_min_size, ksn::vec2i screen_size) noexcept
+{
+	float ratio_x = screen_size[0] / view_min_size[0];
+	float ratio_y = screen_size[1] / view_min_size[1];
+
+	this->m_ratio = std::max(ratio_x, ratio_y);
+	this->m_origin = center - (ksn::vec2f)screen_size * 0.5f / this->m_ratio;
+}
+
+ksn::vec2f view_t::map_w2s(ksn::vec2f world_coordinates) const noexcept
+{
+	return (world_coordinates - this->m_origin) * this->m_ratio;
+}
+
+ksn::vec2f view_t::map_s2w(ksn::vec2f screen_coordinates) const noexcept
+{
+	return screen_coordinates / this->m_ratio + this->m_origin;
+}
+
+void view_t::zoom_in_s(ksn::vec2f screen_coordinates, float factor) noexcept
+{
+	this->zoom_in_w(this->map_s2w(screen_coordinates), factor);
+}
+
+void view_t::zoom_in_w(ksn::vec2f world_coordinates, float factor) noexcept
+{
+	ksn::vec2f shift = world_coordinates - this->m_origin;
+	this->m_ratio /= factor;
+	this->m_origin = world_coordinates - shift * factor;
+}
+
+void view_t::shiht_by_w(ksn::vec2f world_dpos) noexcept
+{
+	this->m_origin += world_dpos;
+}
+
+void view_t::shiht_by_s(ksn::vec2f screen_dpos) noexcept
+{
+	this->shiht_by_w(screen_dpos / this->m_ratio);
 }
