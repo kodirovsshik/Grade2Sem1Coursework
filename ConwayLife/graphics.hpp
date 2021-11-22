@@ -11,6 +11,7 @@
 #include <ksn/color.hpp>
 #include <ksn/math_vec.hpp>
 #include <ksn/window.hpp>
+#include <ksn/image.hpp>
 
 
 
@@ -63,6 +64,8 @@ public:
 
 	void release();
 
+	void draw_image(ksn::vec2f downleft, ksn::image_bgra_t& image, const view_t* view = nullptr);
+	
 	void draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::color_bgr_t color, const view_t* view = nullptr);
 
 	swapchain_t* get_parent() const noexcept;

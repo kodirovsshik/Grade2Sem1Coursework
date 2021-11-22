@@ -25,6 +25,61 @@ void framebuffer_t::release()
 	this->m_semaphore.release();
 }
 
+void framebuffer_t::draw_image(ksn::vec2f downleft, ksn::image_bgra_t& image, const view_t* view)
+{
+	const auto& screen_size = this->m_parent->get_screen_size();
+
+	auto transform = [&]
+	(ksn::vec2f v, bool inclusive) -> ksn::vec2f
+	{
+		if (view)
+			v = view->map_w2s(v);
+
+		ksn::vec2f top;
+		if (inclusive)
+			top = ksn::vec2f(screen_size - ksn::vec2i{ 1, 1 });
+		else
+			top = ksn::vec2f(screen_size);
+
+		v = ksn::clamp(v, { 0, 0 }, top);
+		v += ksn::vec2f{ 0.5f, 0.5f };
+		return v;
+	};
+
+	ksn::vec2f topright = transform(downleft + ksn::vec2f{ image.width, image.height }, false);
+	downleft = transform(downleft, true);
+
+	auto* buffer_data = this->m_screen_data.data();
+	auto buffer_size = this->m_parent->get_actual_size();
+
+	int x0 = int(downleft[0]);
+	int y0 = int(downleft[1]);
+
+	for (int y = y0; y < int(topright[1]); ++y)
+	{
+		for (int x = x0; x < int(topright[0]); ++x)
+		{
+			ksn::color_bgr_t& dst = buffer_data[(buffer_size[1] - 1 - y) * buffer_size[0] + x];
+			ksn::color_bgr_t c1;
+			ksn::color_bgra_t c2;
+
+			int image_x = x - x0;
+			int image_y = image.height - 1 - (y - y0);
+
+			c1 = dst;
+			c2 = image.m_data[image_y * image.width + image_x];
+
+			ksn::vec3f v1{ c1.b, c1.g, c1.r };
+			ksn::vec3f v2{ c2.b, c2.g, c2.r };
+			ksn::vec3f result;
+
+			float t = c2.a / 255.f;
+			result = v2 * t + v1 * (1 - t);
+
+			dst = ksn::color_bgr_t{ uint8_t(result[2] + 0.5f), uint8_t(result[1] + 0.5f), uint8_t(result[0] + 0.5f) };
+		}
+	}
+}
 void framebuffer_t::draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::color_bgr_t color, const view_t* view)
 {
 	const auto& screen_size = this->m_parent->get_screen_size();
