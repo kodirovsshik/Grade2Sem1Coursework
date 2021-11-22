@@ -11,6 +11,12 @@
 
 class engine_t
 {
+public:
+	
+	using on_scroll_data_t = decltype(ksn::event_t::mouse_scroll_data);
+
+
+
 private:
 
 	static const wchar_t* sm_default_fatal_caption;
@@ -35,8 +41,9 @@ private:
 	uint8_t m_bufferization;
 
 	ksn::stopwatch m_update_clock;
-	
 
+	mutable ksn::vec2i m_mouse_pos;
+	mutable bool m_mouse_pos_cached = false;
 
 	static void static_display(engine_t*, framebuffer_t*);
 
@@ -60,6 +67,10 @@ protected:
 	bool engine_key_released[(int)ksn::keyboard_button_t::buttons_count];
 	bool engine_key_down[(int)ksn::keyboard_button_t::buttons_count];
 
+	bool engine_mouse_key_pressed[(int)ksn::mouse_button_t::buttons_count];
+	bool engine_mouse_key_released[(int)ksn::mouse_button_t::buttons_count];
+	bool engine_mouse_key_down[(int)ksn::mouse_button_t::buttons_count];
+
 	union
 	{
 		struct
@@ -67,7 +78,8 @@ protected:
 			bool engine_use_async_displaying : 1;
 			bool engine_prevent_tearing : 1;
 			bool engine_autoclear : 1;
-			bool engine_reset_keys_on_focus_loss : 1;
+			bool engine_reset_keyboard_keys_on_focus_loss : 1;
+			bool engine_reset_mouse_keys_on_focus_loss : 1;
 		};
 
 		uint16_t engine_flags;
@@ -84,6 +96,7 @@ protected:
 	virtual bool on_close();
 	virtual void on_focus_gain();
 	virtual void on_focus_loss();
+	virtual void on_scroll(on_scroll_data_t& scroll_data);
 	
 
 	void set_bufferization(uint8_t frames_count);
@@ -93,9 +106,14 @@ protected:
 	uint32_t get_framerate_limit();
 
 	void set_window_size(ksn::vec<2, uint16_t> size);
+	ksn::vec<2, uint16_t> get_window_size() const noexcept;
+
 	void set_window_size_constraint(ksn::vec<2, uint16_t> min_size, ksn::vec<2, uint16_t> max_size);
+	//ksn::vec<2, uint16_t> get_window_size_constraint() const noexcept;
 
 	void set_window_title(const wchar_t*);
+
+	ksn::vec2i get_mouse_pos() const noexcept;
 
 
 public:

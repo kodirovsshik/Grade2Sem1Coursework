@@ -55,6 +55,9 @@ void engine_t::on_focus_gain()
 void engine_t::on_focus_loss()
 {
 }
+void engine_t::on_scroll(on_scroll_data_t& scroll_data)
+{
+}
 
 
 void engine_t::set_bufferization(uint8_t frames_count)
@@ -91,6 +94,10 @@ void engine_t::set_window_size(ksn::vec<2, uint16_t> size)
 		this->m_swapchain.create(size[0], size[1], this->m_bufferization);
 	}
 }
+ksn::vec<2, uint16_t> engine_t::get_window_size() const noexcept
+{
+	return this->m_window_size;
+}
 void engine_t::set_window_size_constraint(ksn::vec<2, uint16_t> min_size, ksn::vec<2, uint16_t> max_size)
 {
 	auto old_size = this->m_window_size;
@@ -104,10 +111,30 @@ void engine_t::set_window_size_constraint(ksn::vec<2, uint16_t> min_size, ksn::v
 		this->m_swapchain.create(new_size.first, new_size.second, this->m_bufferization);
 	}
 }
+//ksn::vec<2, uint16_t> engine_t::get_window_size_constraint() const noexcept
+//{
+//	return this->m_window;
+//}
 
 void engine_t::set_window_title(const wchar_t* title)
 {
 	this->m_window.set_title(title);
+}
+
+ksn::vec2i engine_t::get_mouse_pos() const noexcept
+{
+	if (this->m_mouse_pos_cached)
+		return this->m_mouse_pos;
+
+	POINT pt;
+	GetCursorPos(&pt);
+	ScreenToClient(this->m_window.window_native_handle(), &pt);
+
+	pt.y = this->m_window_size[1] - 1 - pt.y;
+
+	this->m_mouse_pos = ksn::vec2i{ pt.x, pt.y };
+	this->m_mouse_pos_cached = true;
+	return this->m_mouse_pos;
 }
 
 
@@ -126,6 +153,9 @@ engine_t::engine_t()
 	this->engine_autoclear = true;
 	this->engine_prevent_tearing = true;
 	this->engine_use_async_displaying = true;
+
+	this->engine_reset_keyboard_keys_on_focus_loss = true;
+	this->engine_reset_mouse_keys_on_focus_loss = true;
 
 	this->m_bufferization = 2;
 	this->m_window_size = { 800, 600 };
@@ -265,6 +295,8 @@ bool engine_t::basic_update()
 {
 	memset(this->engine_key_pressed, 0, sizeof(this->engine_key_pressed));
 	memset(this->engine_key_released, 0, sizeof(this->engine_key_released));
+	memset(this->engine_mouse_key_pressed, 0, sizeof(this->engine_mouse_key_pressed));
+	memset(this->engine_mouse_key_released, 0, sizeof(this->engine_mouse_key_released));
 
 	ksn::event_t ev;
 	while (this->m_window.poll_event(ev))
@@ -286,13 +318,23 @@ bool engine_t::basic_update()
 			this->engine_key_released[(int)ev.keyboard_button_data.button] = true;
 			break;
 
+		case ksn::event_type_t::mouse_press:
+			this->engine_mouse_key_down[(int)ev.mouse_button_data.button] = true;
+			this->engine_mouse_key_pressed[(int)ev.mouse_button_data.button] = true;
+			break;
+
+		case ksn::event_type_t::mouse_release:
+			this->engine_mouse_key_down[(int)ev.mouse_button_data.button] = false;
+			this->engine_mouse_key_released[(int)ev.mouse_button_data.button] = true;
+			break;
+
 		case ksn::event_type_t::focus_gained:
 			this->on_focus_gain();
 			break;
 
 		case ksn::event_type_t::focus_lost:
 			this->on_focus_loss();
-			if (this->engine_reset_keys_on_focus_loss)
+			if (this->engine_reset_keyboard_keys_on_focus_loss)
 			{
 				for (size_t i = 0; i < std::size(this->engine_key_down); ++i)
 					if (this->engine_key_down[i])
@@ -301,8 +343,43 @@ bool engine_t::basic_update()
 						this->engine_key_released[i] = true;
 					}
 			}
+			if (this->engine_reset_mouse_keys_on_focus_loss)
+			{
+				for (size_t i = 0; i < std::size(this->engine_mouse_key_down); ++i)
+					if (this->engine_mouse_key_down[i])
+					{
+						this->engine_mouse_key_down[i] = false;
+						this->engine_mouse_key_released[i] = true;
+					}
+			}
+			break;
+
+		case ksn::event_type_t::resize:
+			this->m_window_size = { ev.window_resize_data.width_new, ev.window_resize_data.height_new };
+			this->m_swapchain.create(ev.window_resize_data.width_new, ev.window_resize_data.height_new, this->m_bufferization);
+			break;
+
+		case ksn::event_type_t::maximized:
+			ksn::nop();
+			break;
+
+		case ksn::event_type_t::minimized:
+			ksn::nop();
+			break;
+
+		case ksn::event_type_t::mouse_move:
+			this->m_mouse_pos = { ev.mouse_move_data.x, this->m_window_size[1] - 1 - ev.mouse_move_data.y };
+			this->m_mouse_pos_cached = true;
+			break;
+
+		case ksn::event_type_t::mouse_scroll_vertical:
+		case ksn::event_type_t::mouse_scroll_horizontal:
+			ev.mouse_scroll_data.y = this->m_window_size[1] - 1 - ev.mouse_scroll_data.y;
+			this->on_scroll(ev.mouse_scroll_data);
 			break;
 		}
+
+
 	}
 
 	float dt = this->m_update_clock.restart().as_float_sec();
@@ -330,6 +407,6 @@ void engine_t::error_reporter(const wchar_t* text, const wchar_t* caption, const
 
 	if (caption == nullptr)
 		caption = engine_t::sm_default_error_caption;
-
+	
 	MessageBoxW(GetConsoleWindow(), error_buffer, caption, MB_ICONERROR);
 }
