@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <ksn/image.hpp>
+
 #include <Windows.h>
 
 
@@ -29,6 +31,10 @@ private:
 
 	float m_update_time = 0, m_update_perod = INFINITY;
 	float m_gc_time = 0, m_gc_perod = 1;
+
+	ksn::image_bgra_t m_sprite_space_paused;
+	ksn::image_bgra_t m_sprite_space_unpaused;
+
 
 	static constexpr ksn::color_bgr_t s_cell_alive_color = 0x808080;
 	static constexpr ksn::color_bgr_t s_cell_alive_cursor_color = 0x606060;
@@ -237,7 +243,11 @@ private:
 				? s_cell_alive_cursor_color
 				: s_cell_dead_cursor_color;
 			frame.draw_rect(mouse_pos, mouse_pos + ksn::vec2i{ 1,1 }, at_cursor_color, &this->m_view);
+
+			frame.draw_image({ 0, 0}, this->m_sprite_space_paused);
 		}
+		else
+			frame.draw_image({ 0, 0}, this->m_sprite_space_unpaused);
 	}
 
 	void layer_config_update_internal(float dt) 
@@ -260,6 +270,23 @@ private:
 
 		if (data.is_vertical)
 			this->m_view.zoom_in_s({ data.x, data.y }, powf(zoom_speed, -data.delta));
+	}
+
+	static void init_image(ksn::image_bgra_t& image, const char* filename)
+	{
+		auto load_result = image.load_from_file(filename);
+		if (load_result != ksn::image_bgra_t::load_result::ok)
+		{
+			std::wstring message;
+			message.reserve(64);
+			
+			message += L"Не удалось загрузить ресурс: ";
+			message.append(filename, filename + strlen(filename));
+			message += L"\nКод ошибки: ";
+			message += std::to_wstring(load_result);
+
+			throw exception_with_code(load_result, std::move(message));
+		}
 	}
 
 
@@ -297,6 +324,9 @@ public:
 		this->engine_use_async_displaying = false;
 
 		this->m_view = view_t(view_t::center_t{}, { 0, 0 }, {20, 20}, this->get_window_size());
+
+		init_image(this->m_sprite_space_paused, "spr_space_paused.png");
+		init_image(this->m_sprite_space_unpaused, "spr_space_unpaused.png");
 	}
 	virtual void on_exit()
 	{
