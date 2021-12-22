@@ -39,4 +39,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\spr_about.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\spr_menu.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\spr_menu_button.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\spr_menu_button_light.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\spr_space_paused.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\spr_space_unpaused.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

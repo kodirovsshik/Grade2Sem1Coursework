@@ -171,6 +171,14 @@
     <ClInclude Include="engine.hpp" />
     <ClInclude Include="graphics.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\spr_about.png" />
+    <Image Include="resources\spr_menu.png" />
+    <Image Include="resources\spr_menu_button.png" />
+    <Image Include="resources\spr_menu_button_light.png" />
+    <Image Include="resources\spr_space_paused.png" />
+    <Image Include="resources\spr_space_unpaused.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
