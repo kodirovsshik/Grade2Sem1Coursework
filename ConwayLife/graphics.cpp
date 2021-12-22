@@ -2,6 +2,18 @@
 #include "graphics.hpp"
 
 
+ksn::color_bgr_t alpha_mix(ksn::color_bgr_t c1, ksn::color_bgra_t c2)
+{
+	ksn::vec3f v1{ c1.b, c1.g, c1.r };
+	ksn::vec3f v2{ c2.b, c2.g, c2.r };
+	ksn::vec3f result;
+
+	float t = c2.a / 255.f;
+	result = v2 * t + v1 * (1 - t);
+
+	return ksn::color_bgr_t{ uint8_t(result[2] + 0.5f), uint8_t(result[1] + 0.5f), uint8_t(result[0] + 0.5f) };
+}
+
 
 void framebuffer_t::fill(ksn::color_bgr_t filler)
 {
@@ -25,7 +37,7 @@ void framebuffer_t::release()
 	this->m_semaphore.release();
 }
 
-void framebuffer_t::draw_image(ksn::vec2f downleft, ksn::image_bgra_t& image, const view_t* view)
+void framebuffer_t::draw_image(ksn::vec2f downleft, const ksn::image_bgra_t& image, const view_t* view)
 {
 	const auto& screen_size = this->m_parent->get_screen_size();
 
@@ -60,27 +72,15 @@ void framebuffer_t::draw_image(ksn::vec2f downleft, ksn::image_bgra_t& image, co
 		for (int x = x0; x < int(topright[0]); ++x)
 		{
 			ksn::color_bgr_t& dst = buffer_data[(buffer_size[1] - 1 - y) * buffer_size[0] + x];
-			ksn::color_bgr_t c1;
-			ksn::color_bgra_t c2;
 
 			int image_x = x - x0;
 			int image_y = image.height - 1 - (y - y0);
 
-			c1 = dst;
-			c2 = image.m_data[image_y * image.width + image_x];
-
-			ksn::vec3f v1{ c1.b, c1.g, c1.r };
-			ksn::vec3f v2{ c2.b, c2.g, c2.r };
-			ksn::vec3f result;
-
-			float t = c2.a / 255.f;
-			result = v2 * t + v1 * (1 - t);
-
-			dst = ksn::color_bgr_t{ uint8_t(result[2] + 0.5f), uint8_t(result[1] + 0.5f), uint8_t(result[0] + 0.5f) };
+			dst = alpha_mix(dst, image.m_data[image_y * image.width + image_x]);
 		}
 	}
 }
-void framebuffer_t::draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::color_bgr_t color, const view_t* view)
+void framebuffer_t::draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::color_bgra_t color, const view_t* view)
 {
 	const auto& screen_size = this->m_parent->get_screen_size();
 
@@ -101,7 +101,7 @@ void framebuffer_t::draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::col
 		return v;
 	};
 
-	downleft = transform(downleft, true);
+	downleft = transform(downleft, false);
 	topright = transform(topright, false);
 
 	auto* buffer_data = this->m_screen_data.data();
@@ -111,7 +111,8 @@ void framebuffer_t::draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::col
 	{
 		for (int x = int(downleft[0]); x < int(topright[0]); ++x)
 		{
-			buffer_data[(buffer_size[1] - 1 - y) * buffer_size[0] + x] = color;
+			auto& dst = buffer_data[(buffer_size[1] - 1 - y) * buffer_size[0] + x];
+			dst = alpha_mix(dst, color);
 		}
 	}
 }

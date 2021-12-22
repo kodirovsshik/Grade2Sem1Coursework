@@ -64,9 +64,9 @@ public:
 
 	void release();
 
-	void draw_image(ksn::vec2f downleft, ksn::image_bgra_t& image, const view_t* view = nullptr);
+	void draw_image(ksn::vec2f downleft, const ksn::image_bgra_t& image, const view_t* view = nullptr);
 	
-	void draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::color_bgr_t color, const view_t* view = nullptr);
+	void draw_rect(ksn::vec2f downleft, ksn::vec2f topright, ksn::color_bgra_t color, const view_t* view = nullptr);
 
 	swapchain_t* get_parent() const noexcept;
 	const ksn::color_bgr_t* get_data() const noexcept;
