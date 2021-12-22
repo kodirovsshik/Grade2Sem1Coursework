@@ -21,19 +21,28 @@ private:
 
 	view_t m_view;
 
-	bool m_is_paused = true;
-	bool m_pause_skip  = false;
-	bool m_is_menu_opened  = false;
-	bool m_is_paused_by_menu  = false;
-	bool m_held_for_movement  = false;
+	bool m_is_paused : 1 = true;
+	bool m_pause_skip : 1 = false;
+	bool m_held_for_movement : 1 = false;
+	bool m_should_exit : 1 = false;
+	bool m_is_menu_opened : 1 = false;
+	bool m_is_about_opened : 1 = false;
+	bool mouse_on_button : 1 = false;
+	bool mouse_on_menu_button : 1 = false;
 
 	ksn::vec2i m_mouse_last_pos;
 
 	float m_update_time = 0, m_update_perod = INFINITY;
 	float m_gc_time = 0, m_gc_perod = 1;
 
+	const ksn::vec2i menu_button_pos = { 10, 560 };
+
 	ksn::image_bgra_t m_sprite_space_paused;
 	ksn::image_bgra_t m_sprite_space_unpaused;
+	ksn::image_bgra_t m_sprite_menu;
+	ksn::image_bgra_t m_sprite_menu_button;
+	ksn::image_bgra_t m_sprite_menu_button_light;
+	ksn::image_bgra_t m_sprite_about;
 
 
 	static constexpr ksn::color_bgr_t s_cell_alive_color = 0x808080;
@@ -109,6 +118,9 @@ private:
 
 	void layer_game_update_internal(float dt)
 	{
+		if (this->m_should_exit)
+			return;
+
 		if (this->m_pause_skip)
 		{
 			this->m_is_paused = false;
@@ -189,7 +201,58 @@ private:
 		const bool left_down = this->engine_mouse_key_down[(int)ksn::mouse_button_t::left];
 		const bool right_down = this->engine_mouse_key_down[(int)ksn::mouse_button_t::right];
 
-		if ((left_down || right_down) && this->get_mouse_pos() != this->m_mouse_last_pos)
+		mouse_on_button = false;
+		mouse_on_menu_button = false;
+
+		if (!this->m_is_menu_opened && !this->m_is_about_opened)
+		{
+			ksn::image_bgra_t &img = this->m_sprite_menu_button;
+			ksn::vec2i menu_button_topright = menu_button_pos + ksn::vec2i{ img.width, img.height };
+
+			if (ksn::clamp<2, int>(mouse_screen_pos, menu_button_pos, menu_button_topright - ksn::vec2i{ 1, 1 }) == mouse_screen_pos)
+			{
+				mouse_on_button = true;
+				mouse_on_menu_button = true;
+			}
+		}
+
+		if (this->m_is_about_opened && this->engine_key_down[(int)ksn::keyboard_button_t::enter])
+		{
+			this->m_is_about_opened = false;
+			this->m_is_menu_opened = true;
+		}
+
+		
+		bool focus_on_field = !mouse_on_button && !this->m_is_menu_opened && !this->m_is_about_opened;
+		bool menu_just_opened = false;
+
+		if (this->mouse_on_menu_button && this->engine_mouse_key_released[(int)ksn::mouse_button_t::left])
+		{
+			this->m_is_menu_opened = true;
+			menu_just_opened = true;
+		}
+
+		if (this->m_is_menu_opened && !menu_just_opened && 
+			this->engine_mouse_key_released[(int)ksn::mouse_button_t::left] &&
+			mouse_screen_pos[0] <= (int)this->m_sprite_menu.width)
+		{
+			int mouse_y_reflected = this->get_window_size()[1] - 1 - mouse_screen_pos[1];
+			if (mouse_y_reflected <= 34)
+			{
+				this->m_is_menu_opened = false;
+			}
+			else if (mouse_y_reflected <= 67)
+			{
+				this->m_is_menu_opened = false;
+				this->m_is_about_opened = true;
+			}
+			else if (mouse_y_reflected <= 100)
+			{
+				this->m_should_exit = true;
+			}
+		}
+
+		if (focus_on_field && (left_down || right_down) && this->get_mouse_pos() != this->m_mouse_last_pos)
 		{
 			if (GetAsyncKeyState(VK_SHIFT) < 0)
 			{
@@ -211,7 +274,7 @@ private:
 			this->m_mouse_last_pos = this->get_mouse_pos();
 		}
 
-		if (!this->m_held_for_movement && this->m_is_paused)
+		if (focus_on_field && !this->m_held_for_movement && this->m_is_paused)
 		{
 			if (this->engine_mouse_key_released[(int)ksn::mouse_button_t::left])
 				this->set_populated(mouse_pos, true);
@@ -231,10 +294,11 @@ private:
 				frame.draw_rect({ x, y }, { x + 1, y + 1 }, s_cell_alive_color, &this->m_view);
 			}
 		}
+		
+		auto mouse_screen_pos = this->get_mouse_pos();
 
-		if (m_is_paused)
+		if (this->m_is_paused && !this->mouse_on_button && !this->m_is_menu_opened && !this->m_is_about_opened)
 		{
-			auto mouse_screen_pos = this->get_mouse_pos();
 			auto mouse_pos = (ksn::vec2i)floor(this->m_view.map_s2w(mouse_screen_pos));
 			const bool mouse_inside_window = ksn::clamp<2, int>(mouse_screen_pos, ksn::vec2i{ 0, 0 }, this->get_window_size() - ksn::vec2i{ 1, 1 }) == mouse_screen_pos;
 
@@ -243,24 +307,34 @@ private:
 				? s_cell_alive_cursor_color
 				: s_cell_dead_cursor_color;
 			frame.draw_rect(mouse_pos, mouse_pos + ksn::vec2i{ 1,1 }, at_cursor_color, &this->m_view);
-
-			frame.draw_image({ 0, 0}, this->m_sprite_space_paused);
 		}
+
+		if (this->m_is_paused)
+			frame.draw_image({ 0, 0}, this->m_sprite_space_paused);
 		else
 			frame.draw_image({ 0, 0}, this->m_sprite_space_unpaused);
-	}
 
-	void layer_config_update_internal(float dt) 
-	{
-
-	}
-	void layer_config_update_input()
-	{
-
-	}
-	void layer_config_draw(framebuffer_t& frame)
-	{
-
+		if (!this->m_is_menu_opened && !this->m_is_about_opened)
+		{
+			if (mouse_on_menu_button)
+				frame.draw_image(menu_button_pos, this->m_sprite_menu_button_light);
+			else
+				frame.draw_image(menu_button_pos, this->m_sprite_menu_button);
+		}
+		else
+		{
+			if (this->m_is_menu_opened)
+			{
+				const auto &img = this->m_sprite_menu;
+				frame.draw_rect({ 0, 0 }, { (float)img.width, (float)this->get_window_size()[1] }, { 0xC0202020, 0 });
+				frame.draw_image({ 0, this->get_window_size()[1] - (int)img.height }, img);
+			}
+			if (this->m_is_about_opened)
+			{
+				frame.draw_rect({ 0, 0 }, this->get_window_size(), { 0xC0202020, 0 });
+				frame.draw_image({ 0, 0 }, this->m_sprite_about);
+			}
+		}
 	}
 
 
@@ -278,7 +352,7 @@ private:
 		if (load_result != ksn::image_bgra_t::load_result::ok)
 		{
 			std::wstring message;
-			message.reserve(64);
+			message.reserve(128);
 			
 			message += L"Не удалось загрузить ресурс: ";
 			message.append(filename, filename + strlen(filename));
@@ -294,24 +368,17 @@ public:
 
 	virtual bool update(float dt)
 	{
+		this->layer_game_update_input();
 		this->layer_game_update_internal(dt);
 
-		if (this->m_is_menu_opened)
-		{
-			this->layer_config_update_input();
-			this->layer_config_update_internal(dt);
-		}
-		else
-			this->layer_game_update_input();
-		
-		this->layer_game_update_internal(dt);
-
-		return this->m_is_menu_opened || !this->engine_key_down[(int)ksn::keyboard_button_t::esc];
+		if (this->m_should_exit)
+			return false;
+		if (this->m_is_menu_opened || this->m_is_about_opened)
+			return true;
+		return !this->engine_key_down[(int)ksn::keyboard_button_t::esc];
 	}
 	virtual void draw(framebuffer_t& frame)
 	{
-		if (this->m_is_menu_opened)
-			this->layer_config_draw(frame);
 		this->layer_game_draw(frame);
 	}
 
@@ -321,12 +388,16 @@ public:
 		this->set_framerate_limit(60);
 		this->m_update_perod = 1.f / 10;
 
-		this->engine_use_async_displaying = false;
+		//this->engine_use_async_displaying = false;
 
 		this->m_view = view_t(view_t::center_t{}, { 0, 0 }, {20, 20}, this->get_window_size());
 
-		init_image(this->m_sprite_space_paused, "spr_space_paused.png");
-		init_image(this->m_sprite_space_unpaused, "spr_space_unpaused.png");
+		init_image(this->m_sprite_space_paused, "resources/spr_space_paused.png");
+		init_image(this->m_sprite_space_unpaused, "resources/spr_space_unpaused.png");
+		init_image(this->m_sprite_menu, "resources/spr_menu.png");
+		init_image(this->m_sprite_menu_button, "resources/spr_menu_button.png");
+		init_image(this->m_sprite_menu_button_light, "resources/spr_menu_button_light.png");
+		init_image(this->m_sprite_about, "resources/spr_about.png");
 	}
 	virtual void on_exit()
 	{
