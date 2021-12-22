@@ -127,7 +127,7 @@ private:
 			this->m_update_time += this->m_update_perod;
 			this->m_gc_time += this->m_gc_perod;
 		}
-
+		
 		if (this->m_is_paused) {}
 		else
 		{
@@ -386,7 +386,7 @@ public:
 	{
 		this->set_window_title(L"John Conway's Game of Life");
 		this->set_framerate_limit(60);
-		this->m_update_perod = 1.f / 10;
+		this->m_update_perod = 1.f / 20;
 
 		//this->engine_use_async_displaying = false;
 
